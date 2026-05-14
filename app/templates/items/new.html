@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-3 my-4">
+            <div class="card-body p-4 p-md-5">
+                <h3 class="fw-bold mb-4 text-primary"><i class="bi bi-plus-circle me-2"></i>發布二手商品</h3>
+                <form method="POST" action="{{ url_for('items.new_item') }}">
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <label for="title" class="form-label fw-semibold">商品名稱 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required placeholder="例如：線性代數原文書 第五版">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="brand" class="form-label fw-semibold">品牌</label>
+                            <input type="text" class="form-control" id="brand" name="brand" placeholder="例如：Pearson">
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="category" class="form-label fw-semibold">分類 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="" disabled selected>請選擇分類</option>
+                                <option value="Books">書籍 (Books)</option>
+                                <option value="Electronics">電子產品 (Electronics)</option>
+                                <option value="Dorm Life">宿舍用品 (Dorm Life)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="condition" class="form-label fw-semibold">商品狀況 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="condition" name="condition" required>
+                                <option value="" disabled selected>請選擇狀況</option>
+                                <option value="New">全新 (New)</option>
+                                <option value="Like New">九成新 (Like New)</option>
+                                <option value="Good">狀況良好 (Good)</option>
+                                <option value="Fair">可使用 (Fair)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="description" class="form-label fw-semibold">詳細描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="描述商品的細節、使用狀況、面交地點等..."></textarea>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="mb-4 bg-light p-4 rounded-3 border position-relative">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-robot me-2 text-primary"></i>AI 估價推薦 (F-02)</h5>
+                        <p class="text-muted small mb-3">填寫好分類、品牌與狀況後，點擊下方按鈕，AI 將為您推薦合理的售價區間，幫助您更快售出！</p>
+                        
+                        <div class="row align-items-end">
+                            <div class="col-md-4">
+                                <button type="button" id="btn-estimate" class="btn btn-outline-primary w-100">
+                                    <span id="estimate-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                    <i class="bi bi-magic me-1" id="estimate-icon"></i> 取得 AI 估價
+                                </button>
+                            </div>
+                            <div class="col-md-8">
+                                <div id="estimate-result" class="d-none px-3 py-2 bg-white rounded border border-success text-success fw-bold d-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill me-2"></i> 建議售價區間：NT$ <span id="val-min">0</span> - <span id="val-max">0</span>
+                                </div>
+                                <div id="estimate-error" class="d-none px-3 py-2 bg-white rounded border border-danger text-danger small"></div>
+                            </div>
+                        </div>
+
+                        <!-- 隱藏欄位儲存估價結果 -->
+                        <input type="hidden" id="ai_price_min" name="ai_price_min" value="">
+                        <input type="hidden" id="ai_price_max" name="ai_price_max" value="">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="price" class="form-label fw-semibold">您的定價 (NT$) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control form-control-lg text-danger fw-bold" id="price" name="price" required placeholder="0" min="0">
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-5">
+                        <a href="{{ url_for('items.index') }}" class="btn btn-light me-2">取消</a>
+                        <button type="submit" class="btn btn-primary btn-lg px-5">發布商品</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('btn-estimate').addEventListener('click', function() {
+    const category = document.getElementById('category').value;
+    const brand = document.getElementById('brand').value;
+    const condition = document.getElementById('condition').value;
+
+    const errorDiv = document.getElementById('estimate-error');
+    const resultDiv = document.getElementById('estimate-result');
+    const spinner = document.getElementById('estimate-spinner');
+    const icon = document.getElementById('estimate-icon');
+
+    errorDiv.classList.add('d-none');
+    resultDiv.classList.add('d-none');
+
+    if (!category || !condition) {
+        errorDiv.textContent = '請先選擇「分類」與「商品狀況」才能進行估價！';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+
+    // Show loading
+    spinner.classList.remove('d-none');
+    icon.classList.add('d-none');
+    this.disabled = true;
+
+    fetch('{{ url_for("api.estimate_price") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            category: category,
+            brand: brand,
+            condition: condition
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        document.getElementById('val-min').textContent = data.min_price;
+        document.getElementById('val-max').textContent = data.max_price;
+        
+        document.getElementById('ai_price_min').value = data.min_price;
+        document.getElementById('ai_price_max').value = data.max_price;
+
+        resultDiv.classList.remove('d-none');
+        
+        // Auto-fill price if it's empty
+        const priceInput = document.getElementById('price');
+        if(!priceInput.value) {
+            priceInput.value = Math.floor((data.min_price + data.max_price) / 2);
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = '估價失敗：' + error.message;
+        errorDiv.classList.remove('d-none');
+    })
+    .finally(() => {
+        // Hide loading
+        spinner.classList.add('d-none');
+        icon.classList.remove('d-none');
+        this.disabled = false;
+    });
+});
+</script>
+{% endblock %}
