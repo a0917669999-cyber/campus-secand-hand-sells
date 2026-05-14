@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .item-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .item-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .price-tag {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #e63946;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Filter Sidebar -->
+    <div class="col-lg-3 mb-4">
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-4"><i class="bi bi-funnel me-2"></i>搜尋與過濾</h5>
+                <form method="GET" action="{{ url_for('items.index') }}">
+                    <div class="mb-3">
+                        <label for="q" class="form-label text-muted small text-uppercase fw-semibold">關鍵字搜尋</label>
+                        <input type="text" class="form-control" id="q" name="q" value="{{ request.args.get('q', '') }}" placeholder="商品名稱、描述...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label text-muted small text-uppercase fw-semibold">分類</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">所有分類</option>
+                            <option value="Books" {% if request.args.get('category') == 'Books' %}selected{% endif %}>書籍 (Books)</option>
+                            <option value="Electronics" {% if request.args.get('category') == 'Electronics' %}selected{% endif %}>電子產品 (Electronics)</option>
+                            <option value="Dorm Life" {% if request.args.get('category') == 'Dorm Life' %}selected{% endif %}>宿舍用品 (Dorm Life)</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small text-uppercase fw-semibold">價格區間</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" name="min_price" value="{{ request.args.get('min_price', '') }}" placeholder="最低價">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" name="max_price" value="{{ request.args.get('max_price', '') }}" placeholder="最高價">
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">套用過濾</button>
+                        <a href="{{ url_for('items.index') }}" class="btn btn-light">清除過濾</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Grid -->
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold mb-0">最新上架</h4>
+            <span class="text-muted small">共找到 {{ items|length }} 件商品</span>
+        </div>
+
+        {% if items %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+            {% for item in items %}
+            <div class="col">
+                <a href="{{ url_for('items.item_detail', item_id=item['id']) }}" class="text-decoration-none text-dark">
+                    <div class="card h-100 border-0 shadow-sm item-card rounded-3 overflow-hidden">
+                        <!-- Placeholder Image -->
+                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px; color: #adb5bd;">
+                            <i class="bi bi-image fs-1"></i>
+                        </div>
+                        <div class="card-body">
+                            <span class="badge bg-secondary mb-2">{{ item['category'] }}</span>
+                            <h5 class="card-title text-truncate fw-bold mb-1" title="{{ item['title'] }}">{{ item['title'] }}</h5>
+                            <p class="card-text text-muted small mb-3">狀況: {{ item['condition'] }}</p>
+                            <div class="d-flex justify-content-between align-items-end mt-auto">
+                                <span class="price-tag">NT$ {{ item['price'] }}</span>
+                                <small class="text-muted">{{ item['created_at'].split(' ')[0] }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
+            <h5 class="text-muted">找不到符合條件的商品</h5>
+            <p class="text-muted small">試試其他關鍵字或放寬過濾條件</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

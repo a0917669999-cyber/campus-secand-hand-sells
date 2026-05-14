@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-lg-8 mx-auto">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('items.index') }}" class="text-decoration-none">首頁</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('items.index', category=item['category']) }}" class="text-decoration-none">{{ item['category'] }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">商品詳情</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden mb-4">
+            <div class="row g-0">
+                <div class="col-md-5 bg-light d-flex align-items-center justify-content-center border-end" style="min-height: 300px; color: #adb5bd;">
+                    <i class="bi bi-image" style="font-size: 5rem;"></i>
+                </div>
+                <div class="col-md-7">
+                    <div class="card-body p-4 p-md-5 h-100 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-secondary">{{ item['category'] }}</span>
+                            <span class="text-muted small"><i class="bi bi-clock me-1"></i> {{ item['created_at'].split(' ')[0] }}</span>
+                        </div>
+                        <h2 class="card-title fw-bold mb-3">{{ item['title'] }}</h2>
+                        
+                        <div class="mb-4">
+                            <span class="fs-2 fw-bold text-danger">NT$ {{ item['price'] }}</span>
+                            {% if item['ai_price_min'] and item['ai_price_max'] %}
+                            <div class="mt-1 small text-muted">
+                                <i class="bi bi-robot text-primary"></i> AI 推薦價: NT$ {{ item['ai_price_min'] }} - {{ item['ai_price_max'] }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="bg-light p-3 rounded-3 mb-4">
+                            <div class="row mb-2">
+                                <div class="col-4 text-muted small text-uppercase">商品狀況</div>
+                                <div class="col-8 fw-semibold">{{ item['condition'] }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-4 text-muted small text-uppercase">品牌</div>
+                                <div class="col-8 fw-semibold">{{ item['brand'] or '未提供' }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-4 text-muted small text-uppercase">賣家</div>
+                                <div class="col-8 fw-semibold"><i class="bi bi-person-circle me-1"></i>{{ item['seller_email'] }}</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top">
+                            {% if session.get('user_id') %}
+                                {% if session.get('user_id') == item['seller_id'] %}
+                                <form method="POST" action="{{ url_for('items.delete_item', item_id=item['id']) }}" class="d-inline" onsubmit="return confirm('確定要刪除這個商品嗎？此動作無法還原。');">
+                                    <button type="submit" class="btn btn-outline-danger w-100"><i class="bi bi-trash me-2"></i>刪除商品</button>
+                                </form>
+                                {% else %}
+                                <a href="mailto:{{ item['seller_email'] }}?subject=CampuSwap 詢問商品：{{ item['title'] }}" class="btn btn-primary w-100 btn-lg">
+                                    <i class="bi bi-envelope me-2"></i>聯絡賣家
+                                </a>
+                                {% endif %}
+                            {% else %}
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary w-100">請先登入以聯絡賣家</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if item['description'] %}
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-4 p-md-5">
+                <h5 class="fw-bold mb-4">商品詳細描述</h5>
+                <p class="card-text" style="white-space: pre-line;">{{ item['description'] }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
